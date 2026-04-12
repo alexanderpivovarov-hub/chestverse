@@ -3,18 +3,14 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static('.')); // для обслуживания HTML файлов
+app.use(express.static('.'));
 
-// Хранилище данных (в памяти, при перезапуске сбросится)
-let users = {}; // userId -> { name, avatar, desc, balance, inventory, createdAt, isBanned }
+// Хранилище данных (в памяти)
+let users = {};
 let promoCodes = { NEWBIE25: { amount: 25, usesLeft: 999999, onePerUser: true, usedBy: {} } };
 let nextUserId = 1;
 
-// Генерация ID
 function generateUserId() { return (nextUserId++).toString(); }
-
-// Вспомогательные функции
-function saveToMemory() { /* позже добавим файл или БД */ }
 
 // ========== API ==========
 
@@ -68,8 +64,7 @@ app.post('/api/open', (req, res) => {
     const maxOpen = users[userId].extraOpens ? 30 : 10;
     if (quantity > maxOpen) return res.json({ success: false, message: `Максимум ${maxOpen} открытий за раз` });
     
-    // Простейший расчёт награды (монеты)
-    const cost = 100 * quantity; // цена сундука пока фикс
+    const cost = 100 * quantity;
     if (users[userId].balance < cost) return res.json({ success: false, message: 'Не хватает монет' });
     
     users[userId].balance -= cost;
@@ -85,13 +80,6 @@ app.post('/api/open', (req, res) => {
     res.json({ success: true, rewards, newBalance: users[userId].balance });
 });
 
-// Продажа предмета (заглушка)
-app.post('/api/sell', (req, res) => {
-    const { userId, itemId } = req.body;
-    if (!users[userId]) return res.status(404).json({ error: 'User not found' });
-    res.json({ success: true, message: 'Функция в разработке' });
-});
-
 // Получение списка сундуков
 app.get('/api/chests', (req, res) => {
     res.json({
@@ -103,7 +91,7 @@ app.get('/api/chests', (req, res) => {
     });
 });
 
-// Админ-панель (защищена простым ключом)
+// ========== АДМИН-ПАНЕЛЬ ==========
 app.post('/api/admin/getUsers', (req, res) => {
     const { adminKey } = req.body;
     if (adminKey !== 'CHESTVERSE_ADMIN_2026') return res.status(403).json({ error: 'Invalid admin key' });
