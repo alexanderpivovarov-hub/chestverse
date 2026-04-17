@@ -18,6 +18,9 @@ app.get('/admin', (req, res) => {
 // ========== ВАШИ API (оставьте как есть) ==========
 // ... (весь ваш код с /api/register, /api/login и т.д.)
 // ...
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/index.html');
+});
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
