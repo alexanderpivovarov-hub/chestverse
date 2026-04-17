@@ -81,16 +81,18 @@ app.get('/api/chests', (req, res) => {
     ] });
 });
 
-// ========== АДМИНКА ==========
+// ========== АДМИНКА (с безопасным ключом) ==========
+const ADMIN_KEY = process.env.ADMIN_KEY || 'CHESTVERSE_ADMIN_2026';
+
 app.post('/api/admin/getUsers', (req, res) => {
     const { adminKey } = req.body;
-    if (adminKey !== 'CHESTVERSE_ADMIN_2026') return res.status(403).json({ error: 'Invalid admin key' });
+    if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
     res.json({ users: Object.values(users) });
 });
 
 app.post('/api/admin/addCoins', (req, res) => {
     const { adminKey, userId, amount } = req.body;
-    if (adminKey !== 'CHESTVERSE_ADMIN_2026') return res.status(403).json({ error: 'Invalid admin key' });
+    if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
     if (!users[userId]) return res.json({ error: 'User not found' });
     users[userId].balance += amount;
     res.json({ success: true, newBalance: users[userId].balance });
@@ -98,7 +100,7 @@ app.post('/api/admin/addCoins', (req, res) => {
 
 app.post('/api/admin/ban', (req, res) => {
     const { adminKey, userId } = req.body;
-    if (adminKey !== 'CHESTVERSE_ADMIN_2026') return res.status(403).json({ error: 'Invalid admin key' });
+    if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
     if (!users[userId]) return res.json({ error: 'User not found' });
     users[userId].isBanned = true;
     res.json({ success: true });
@@ -106,7 +108,7 @@ app.post('/api/admin/ban', (req, res) => {
 
 app.post('/api/admin/unban', (req, res) => {
     const { adminKey, userId } = req.body;
-    if (adminKey !== 'CHESTVERSE_ADMIN_2026') return res.status(403).json({ error: 'Invalid admin key' });
+    if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
     if (!users[userId]) return res.json({ error: 'User not found' });
     users[userId].isBanned = false;
     res.json({ success: true });
@@ -114,14 +116,14 @@ app.post('/api/admin/unban', (req, res) => {
 
 app.post('/api/admin/createPromo', (req, res) => {
     const { adminKey, code, amount, uses, onePerUser } = req.body;
-    if (adminKey !== 'CHESTVERSE_ADMIN_2026') return res.status(403).json({ error: 'Invalid admin key' });
+    if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
     promoCodes[code] = { amount, usesLeft: uses, onePerUser, usedBy: {} };
     res.json({ success: true });
 });
 
 app.post('/api/admin/toggleExtraOpens', (req, res) => {
     const { adminKey, userId } = req.body;
-    if (adminKey !== 'CHESTVERSE_ADMIN_2026') return res.status(403).json({ error: 'Invalid admin key' });
+    if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
     if (!users[userId]) return res.json({ error: 'User not found' });
     users[userId].extraOpens = !users[userId].extraOpens;
     res.json({ success: true, extraOpens: users[userId].extraOpens });
