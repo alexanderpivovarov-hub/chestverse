@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHESTVERSE | Админ-панель</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a1a; font-family: 'Segoe UI', system-ui; color: #eef5ff; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { margin-bottom: 20px; }
+        .login-panel, .admin-panel { background: #1e293b; border-radius: 28px; padding: 25px; margin-bottom: 20px; }
+        input, select, button { background: #0f172a; border: none; border-radius: 30px; padding: 10px 16px; color: white; margin: 5px; }
+        button { background: #f59e0b; cursor: pointer; font-weight: bold; }
+        button.danger { background: #dc2626; }
+        button.success { background: #10b981; }
+        .user-card { background: #0f172a; border-radius: 20px; padding: 15px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .banned { opacity: 0.5; border-left: 4px solid #dc2626; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #334155; }
+        .stats { background: #0f172a; border-radius: 20px; padding: 15px; margin-bottom: 20px; }
+        .server-status { margin-bottom: 15px; padding: 8px; border-radius: 20px; text-align: center; }
+        .status-online { background: #10b98120; color: #10b981; }
+        .status-offline { background: #ef444420; color: #ef4444; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>👑 CHESTVERSE Админ-панель</h1>
+    
+    <div id="serverStatus" class="server-status">🟡 Проверка подключения...</div>
+    
+    <div class="login-panel" id="loginPanel">
+        <h3>Вход в админ-панель</h3>
+        <input type="password" id="adminKeyInput" placeholder="Секретный ключ">
+        <button id="loginBtn">Войти</button>
+    </div>
+    
+    <div id="adminPanel" style="display:none;">
+        <div class="stats" id="statsPanel"></div>
+        
+        <div class="admin-panel">
+            <h3>➕ Создать промокод</h3>
+            <input type="text" id="promoCode" placeholder="Код">
+            <input type="number" id="promoAmount" placeholder="Сумма">
+            <input type="number" id="promoUses" placeholder="Кол-во активаций">
+            <label><input type="checkbox" id="promoOnePerUser"> Один раз на пользователя</label>
+            <button id="createPromoBtn">Создать</button>
+        </div>
+        
+        <div class="admin-panel">
+            <h3>📋 Пользователи</h3>
+            <div id="usersList"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const SERVER = window.location.origin;
+    let adminKey = '';
+    
+    async function checkServer() {
+        try {
+            const res = await fetch(`${SERVER}/api/chests`);
+            if(res.ok) {
+                document.getElementById('serverStatus').innerHTML = '🟢 Сервер доступен';
+                document.getElementById('serverStatus').className = 'server-status status-online';
+                return true;
+            }
+        } catch(e) {}
+        document.getElementById('serverStatus').innerHTML = '🔴 Нет связи с сервером';
+        document.getElementById('serverStatus').className = 'server-status status-offline';
+        return false;
+    }
+    
+    async function apiAdmin(endpoint, data) {
+        const res = await fetch(`${SERVER}${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...data, adminKey })
+        });
+        return await res.json();
+    }
+    
+    async function login() {
+        const key = document.getElementById('adminKeyInput').value;
+        adminKey = key;
+        const res = await apiAdmin('/api/admin/getUsers', {});
+        if(res && !res.error) {
+            document.getElementById('loginPanel').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            loadUsers();
+        } else {
+            alert('Неверный ключ');
+        }
+    }
+    
+    async function loadUsers() {
+        const res = await apiAdmin('/api/admin/getUsers', {});
+        if(res && res.users) {
+            const users = res.users;
+            document.getElementById('statsPanel').innerHTML = `<strong>📊 Статистика:</strong> Всего игроков: ${users.length} | Баланс в обороте: ${users.reduce((s,u)=>s+u.balance,0)}💰`;
+            const container = document.getElementById('usersList');
+            container.innerHTML = `<table><tr><th>ID</th><th>Имя</th><th>Баланс</th><th>Статус</th><th>Действия</th></tr>${users.map(u => `<tr class="${u.isBanned ? 'banned' : ''}"><td>${u.id}</td><td>${u.avatar} ${u.name}</td><td>${u.balance}💰</td><td>${u.isBanned ? '🔴 Забанен' : '🟢 Активен'}</td><td><button onclick="addCoins('${u.id}')">+1000💰</button> <button onclick="banUser('${u.id}')" class="danger">🔨 Бан</button> <button onclick="unbanUser('${u.id}')" class="success">🔓 Разбан</button> <button onclick="toggleExtra('${u.id}')">⭐ Расш. открытия</button></td></tr>`).join('')}</table>`;
+        }
+    }
+    
+    async function addCoins(userId) { await apiAdmin('/api/admin/addCoins', { userId, amount: 1000 }); loadUsers(); }
+    async function banUser(userId) { await apiAdmin('/api/admin/ban', { userId }); loadUsers(); }
+    async function unbanUser(userId) { await apiAdmin('/api/admin/unban', { userId }); loadUsers(); }
+    async function toggleExtra(userId) { await apiAdmin('/api/admin/toggleExtraOpens', { userId }); loadUsers(); }
+    
+    async function createPromo() {
+        const code = document.getElementById('promoCode').value;
+        const amount = parseInt(document.getElementById('promoAmount').value);
+        const uses = parseInt(document.getElementById('promoUses').value);
+        const onePerUser = document.getElementById('promoOnePerUser').checked;
+        if(!code || !amount) return alert('Заполните поля');
+        await apiAdmin('/api/admin/createPromo', { code, amount, uses, onePerUser });
+        alert('Промокод создан!');
+        document.getElementById('promoCode').value = '';
+    }
+    
+    document.getElementById('loginBtn').onclick = login;
+    document.getElementById('createPromoBtn').onclick = createPromo;
+    window.addCoins = addCoins;
+    window.banUser = banUser;
+    window.unbanUser = unbanUser;
+    window.toggleExtra = toggleExtra;
+    
+    checkServer();
+</script>
+</body>
+</html>
