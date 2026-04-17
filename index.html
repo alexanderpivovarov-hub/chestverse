@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>CHESTVERSE | Открывай сундуки</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        body { background: linear-gradient(145deg, #0a0a1a 0%, #0c0f20 100%); font-family: 'Segoe UI', system-ui; color: #eef5ff; padding: 20px; min-height: 100vh; }
+        .app-container { max-width: 600px; margin: 0 auto; }
+        
+        /* Верхняя панель */
+        .top-bar { background: rgba(18,25,45,0.95); backdrop-filter: blur(12px); border-radius: 28px; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .logo h1 { font-size: 1.3rem; background: linear-gradient(135deg, #FFD966, #FF8C42); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .top-actions { display: flex; gap: 12px; align-items: center; }
+        .balance-btn, .profile-btn { background: #0f172ae6; padding: 6px 14px; border-radius: 40px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: bold; }
+        .balance-value { color: #FFD966; font-size: 1.2rem; }
+        .inv-btn { background: #2d3748; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.3rem; position: relative; }
+        .inv-badge { position: absolute; top: -5px; right: -5px; background: #ef4444; width: 12px; height: 12px; border-radius: 50%; display: none; }
+        
+        /* Экран регистрации */
+        .register-screen { background: #1e293b; border-radius: 40px; padding: 30px; text-align: center; margin-top: 50px; }
+        .register-screen input, .register-screen textarea { background: #0f172a; border: none; border-radius: 30px; padding: 12px; color: white; width: 100%; margin: 8px 0; }
+        .register-btn { background: linear-gradient(95deg, #f59e0b, #ef4444); border: none; padding: 14px; border-radius: 40px; font-weight: bold; color: white; cursor: pointer; width: 100%; margin-top: 15px; }
+        .server-status { margin-top: 10px; font-size: 0.8rem; padding: 5px; border-radius: 20px; display: inline-block; }
+        .status-online { color: #10b981; }
+        .status-offline { color: #ef4444; }
+        
+        /* Основной интерфейс */
+        .chest-grid { display: flex; flex-direction: column; gap: 15px; margin-top: 20px; }
+        .chest-card { background: #1e293b; border-radius: 28px; padding: 15px; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: 0.2s; }
+        .chest-card:hover { transform: scale(1.02); background: #2d3a4e; }
+        .chest-icon { font-size: 2.5rem; }
+        .chest-info { flex: 1; }
+        .chest-name { font-weight: bold; font-size: 1.1rem; }
+        .chest-price { color: #FFD966; font-size: 0.9rem; }
+        .open-btn { background: #f59e0b; border: none; padding: 8px 20px; border-radius: 40px; font-weight: bold; cursor: pointer; }
+        
+        /* Модалки */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(20px); z-index: 1000; display: flex; align-items: center; justify-content: center; visibility: hidden; opacity: 0; transition: 0.2s; }
+        .modal.active { visibility: visible; opacity: 1; }
+        .modal-content { background: #1e293b; border-radius: 48px; padding: 25px; max-width: 350px; width: 90%; text-align: center; }
+        .modal-content input { background: #0f172a; border: none; border-radius: 30px; padding: 10px; color: white; width: 100%; margin: 8px 0; }
+        .close-btn { background: #4a5568; border: none; padding: 10px; border-radius: 40px; color: white; cursor: pointer; margin-top: 15px; width: 100%; }
+        .ok-btn { background: #10b981; }
+        .cancel-btn { background: #ef4444; }
+        
+        /* Уведомления */
+        .toast { position: fixed; bottom: 30px; left: 20px; right: 20px; background: #1e293b; border-radius: 20px; padding: 15px; z-index: 1100; transform: translateY(100px); transition: 0.3s; opacity: 0; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast-title { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; }
+        .toast-desc { font-size: 0.8rem; opacity: 0.7; margin-bottom: 12px; }
+        .toast-buttons { display: flex; gap: 10px; justify-content: flex-end; }
+        .toast-btn { padding: 6px 14px; border-radius: 30px; border: none; font-weight: bold; cursor: pointer; }
+        .toast-timer { height: 3px; background: #f59e0b; width: 100%; margin-top: 10px; transition: width 3s linear; }
+        
+        .quantity-selector { display: flex; justify-content: center; gap: 10px; margin: 15px 0; flex-wrap: wrap; }
+        .qty-btn { background: #2d3748; padding: 8px 16px; border-radius: 40px; cursor: pointer; }
+        .qty-btn.active { background: #f59e0b; }
+    </style>
+</head>
+<body>
+<div class="app-container" id="app">
+    <div class="top-bar" id="topBar" style="display:none;">
+        <div class="logo"><h1>🎲 CHESTVERSE</h1></div>
+        <div class="top-actions">
+            <div class="inv-btn" id="invBtn">📦<span class="inv-badge" id="invBadge"></span></div>
+            <div class="balance-btn" id="balanceBtn"><span class="balance-value" id="balanceValue">0</span>💰</div>
+            <div class="profile-btn" id="profileBtn">👤</div>
+        </div>
+    </div>
+    
+    <div id="registerScreen" class="register-screen">
+        <h2>✨ Добро пожаловать!</h2>
+        <p style="margin:10px 0">Создайте свой аккаунт</p>
+        <div id="serverStatus" class="server-status">🟡 Проверка подключения...</div>
+        <input type="text" id="regName" placeholder="Имя" value="Игрок">
+        <input type="text" id="regAvatar" placeholder="Аватар (эмодзи)" value="👤">
+        <textarea id="regDesc" rows="2" placeholder="О себе"></textarea>
+        <button class="register-btn" id="registerBtn">🚀 НАЧАТЬ ИГРУ</button>
+    </div>
+    
+    <div id="mainContent" style="display:none;">
+        <div id="chestGrid" class="chest-grid"></div>
+        <div id="promoSection" style="margin-top:20px; text-align:center;">
+            <input type="text" id="promoInput" placeholder="Введите промокод" style="background:#1e293b; border:none; border-radius:40px; padding:12px; width:70%; color:white;">
+            <button id="activatePromoBtn" style="background:#f59e0b; border:none; border-radius:40px; padding:12px 20px; margin-left:8px;">Активировать</button>
+        </div>
+    </div>
+</div>
+
+<div id="profileModal" class="modal"><div class="modal-content"><h3>👤 Профиль</h3><p id="profileInfo"></p><button class="close-btn" onclick="closeModal('profileModal')">Закрыть</button></div></div>
+<div id="inventoryModal" class="modal"><div class="modal-content"><h3>📦 Инвентарь</h3><div id="inventoryList"></div><button class="close-btn" onclick="closeModal('inventoryModal')">Закрыть</button></div></div>
+<div id="quantityModal" class="modal"><div class="modal-content"><h3>Выберите количество</h3><div id="qtySelector" class="quantity-selector"></div><div class="toast-buttons" style="margin-top:15px;"><button class="toast-btn ok-btn" id="confirmOpenBtn">Открыть</button><button class="toast-btn cancel-btn" onclick="closeModal('quantityModal')">Отмена</button></div></div></div>
+
+<script>
+    const SERVER = window.location.origin;
+    let currentUser = null;
+    let currentChest = null;
+    let currentQuantity = 1;
+    let chestsList = [];
+    
+    async function checkServer() {
+        try {
+            const res = await fetch(`${SERVER}/api/chests`);
+            if(res.ok) {
+                document.getElementById('serverStatus').innerHTML = '🟢 Сервер доступен';
+                document.getElementById('serverStatus').className = 'server-status status-online';
+                return true;
+            }
+        } catch(e) {}
+        document.getElementById('serverStatus').innerHTML = '🔴 Нет связи с сервером';
+        document.getElementById('serverStatus').className = 'server-status status-offline';
+        return false;
+    }
+    
+    function showToast(title, desc, buttons = [], autoClose = true) {
+        let toast = document.getElementById('customToast');
+        if(!toast) { toast = document.createElement('div'); toast.id = 'customToast'; toast.className = 'toast'; document.body.appendChild(toast); }
+        toast.innerHTML = `<div class="toast-title">${title}</div><div class="toast-desc">${desc}</div><div class="toast-buttons" id="toastButtons"></div><div class="toast-timer" id="toastTimer"></div>`;
+        toast.classList.add('show');
+        const btnContainer = document.getElementById('toastButtons');
+        if(buttons.length) buttons.forEach(btn => { const button = document.createElement('button'); button.className = `toast-btn ${btn.class || ''}`; button.textContent = btn.text; button.onclick = () => { btn.onClick(); toast.classList.remove('show'); }; btnContainer.appendChild(button); });
+        if(autoClose && !buttons.length) { setTimeout(() => { if(toast.classList.contains('show')) toast.classList.remove('show'); }, 3000); }
+    }
+    
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    
+    async function apiCall(endpoint, data) {
+        try {
+            const res = await fetch(`${SERVER}${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            return await res.json();
+        } catch(e) { showToast('Ошибка', 'Не удалось соединиться с сервером', [], true); return null; }
+    }
+    
+    async function register() {
+        const name = document.getElementById('regName').value;
+        const avatar = document.getElementById('regAvatar').value;
+        const desc = document.getElementById('regDesc').value;
+        const res = await apiCall('/api/register', { name, avatar, desc });
+        if(res && res.success) {
+            currentUser = res.user;
+            localStorage.setItem('chestverse_userId', currentUser.id);
+            showToast('Добро пожаловать!', 'Аккаунт создан. Используйте промокод NEWBIE25 для получения 25 монет!', [], true);
+            await activatePromoCode('NEWBIE25', true);
+            loadMainApp();
+        } else showToast('Ошибка', 'Не удалось создать аккаунт', [], true);
+    }
+    
+    async function activatePromoCode(code, silent = false) {
+        if(!currentUser) return;
+        const res = await apiCall('/api/promo', { userId: currentUser.id, code });
+        if(res && res.success) {
+            currentUser.balance = res.newBalance;
+            updateBalanceUI();
+            if(!silent) showToast('Успех!', `+${res.message}`, [], true);
+        } else if(!silent) showToast('Ошибка', res?.message || 'Промокод недействителен', [], true);
+    }
+    
+    async function loadChests() {
+        try {
+            const res = await fetch(`${SERVER}/api/chests`);
+            const data = await res.json();
+            chestsList = data.chests;
+            renderChests();
+        } catch(e) { console.error(e); }
+    }
+    
+    function renderChests() {
+        const grid = document.getElementById('chestGrid');
+        if(!grid) return;
+        grid.innerHTML = chestsList.map(chest => `<div class="chest-card" onclick="selectChest(${chest.id})"><div class="chest-icon">${chest.icon}</div><div class="chest-info"><div class="chest-name">${chest.name}</div><div class="chest-price">💰 ${chest.price}</div></div><button class="open-btn">Открыть</button></div>`).join('');
+    }
+    
+    function selectChest(chestId) {
+        currentChest = chestsList.find(c => c.id === chestId);
+        if(!currentChest) return;
+        const maxOpen = currentUser?.extraOpens ? 30 : 10;
+        const container = document.getElementById('qtySelector');
+        if(container) {
+            const qtys = [1,2,3,5,10];
+            if(maxOpen >= 15) qtys.push(15);
+            if(maxOpen >= 20) qtys.push(20);
+            if(maxOpen >= 30) qtys.push(30);
+            container.innerHTML = qtys.map(q => `<div class="qty-btn ${q===1?'active':''}" data-qty="${q}">${q}</div>`).join('');
+            container.querySelectorAll('.qty-btn').forEach(btn => btn.onclick = () => { document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); currentQuantity = parseInt(btn.dataset.qty); });
+        }
+        document.getElementById('confirmOpenBtn').onclick = () => { openChest(); closeModal('quantityModal'); };
+        document.getElementById('quantityModal').classList.add('active');
+    }
+    
+    async function openChest() {
+        if(!currentUser || !currentChest) return;
+        const res = await apiCall('/api/open', { userId: currentUser.id, chestId: currentChest.id, quantity: currentQuantity });
+        if(res && res.success) {
+            currentUser.balance = res.newBalance;
+            updateBalanceUI();
+            let msg = `Вы получили:\n`;
+            res.rewards.forEach(r => msg += `${r.icon} ${r.name}: ${r.value} монет\n`);
+            showToast('Открытие сундука', msg, [], true);
+        } else showToast('Ошибка', res?.message || 'Не удалось открыть', [], true);
+    }
+    
+    function updateBalanceUI() { document.getElementById('balanceValue').innerText = currentUser?.balance || 0; }
+    
+    async function loadProfile() {
+        if(!currentUser) return;
+        document.getElementById('profileInfo').innerHTML = `<strong>${currentUser.avatar} ${currentUser.name}</strong><br>${currentUser.desc || 'Нет описания'}<br>ID: ${currentUser.id}<br>Баланс: ${currentUser.balance}💰<br>${currentUser.extraOpens ? '⭐ Расширенные открытия (до 30)' : '📦 Обычные открытия (до 10)'}`;
+        document.getElementById('profileModal').classList.add('active');
+    }
+    
+    async function loadInventory() {
+        if(!currentUser) return;
+        const inv = currentUser.inventory || [];
+        const container = document.getElementById('inventoryList');
+        if(container) container.innerHTML = inv.length === 0 ? '<p>Инвентарь пуст</p>' : inv.map(item => `<div style="padding:8px; border-bottom:1px solid #334155;">${item.icon} ${item.name} - 💰${item.value}</div>`).join('');
+        document.getElementById('inventoryModal').classList.add('active');
+    }
+    
+    async function loadMainApp() {
+        document.getElementById('registerScreen').style.display = 'none';
+        document.getElementById('topBar').style.display = 'flex';
+        document.getElementById('mainContent').style.display = 'block';
+        updateBalanceUI();
+        await loadChests();
+    }
+    
+    async function checkSavedUser() {
+        const savedId = localStorage.getItem('chestverse_userId');
+        if(savedId) {
+            const res = await apiCall('/api/login', { userId: savedId });
+            if(res && res.success && !res.user.isBanned) {
+                currentUser = res.user;
+                await loadMainApp();
+                return;
+            }
+        }
+        document.getElementById('registerScreen').style.display = 'block';
+    }
+    
+    document.getElementById('registerBtn').onclick = register;
+    document.getElementById('activatePromoBtn').onclick = () => { const code = document.getElementById('promoInput').value.trim(); if(code) activatePromoCode(code); };
+    document.getElementById('profileBtn').onclick = loadProfile;
+    document.getElementById('balanceBtn').onclick = () => showToast('Баланс', `Ваш баланс: ${currentUser?.balance}💰`, [], true);
+    document.getElementById('invBtn').onclick = loadInventory;
+    
+    checkServer();
+    checkSavedUser();
+</script>
+</body>
+</html>
