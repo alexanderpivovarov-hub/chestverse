@@ -5,13 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>CHESTVERSE | ИГРА + АДМИНКА</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
             background: linear-gradient(145deg, #0a0a1a 0%, #0c0f20 100%);
             font-family: 'Segoe UI', system-ui, sans-serif;
@@ -19,10 +13,8 @@
             padding: 16px;
             min-height: 100vh;
         }
-        .container {
-            max-width: 700px;
-            margin: 0 auto;
-        }
+        .container { max-width: 700px; margin: 0 auto; }
+        
         /* Верхняя панель */
         .top-bar {
             background: rgba(18, 25, 45, 0.95);
@@ -33,20 +25,34 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+            gap: 10px;
             flex-wrap: wrap;
-            gap: 10px;
         }
-        .logo h1 {
-            font-size: 1.2rem;
-            background: linear-gradient(135deg, #FFD966, #FF8C42, #C084FC);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        .top-actions {
+        .logo h1 { font-size: 1.2rem; background: linear-gradient(135deg, #FFD966, #FF8C42, #C084FC); -webkit-background-clip: text; background-clip: text; color: transparent; cursor: pointer; }
+        .top-actions { display: flex; gap: 12px; align-items: center; }
+        .icon-btn {
+            background: #2d3748;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
             display: flex;
-            gap: 10px;
             align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.3rem;
+            position: relative;
+            transition: 0.2s;
+        }
+        .icon-btn:hover { transform: scale(1.05); background: #f59e0b; }
+        .badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #ef4444;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: none;
         }
         .balance-btn, .profile-btn {
             background: #0f172ae6;
@@ -57,34 +63,27 @@
             align-items: center;
             gap: 5px;
             font-weight: bold;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
         }
-        .balance-value {
-            color: #FFD966;
-            font-size: 1.1rem;
+        .balance-value { color: #FFD966; font-size: 1.1rem; }
+        
+        /* Индикатор соединения */
+        .connection-status {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            height: 4px;
+            border-radius: 4px;
+            transition: background 0.3s;
+            z-index: 100;
         }
-        .inv-btn {
-            background: #2d3748;
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 1.2rem;
-            position: relative;
-        }
-        .inv-badge {
-            position: absolute;
-            top: -4px;
-            right: -4px;
-            background: #ef4444;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: none;
-        }
+        .connection-red { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+        .connection-yellow { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; animation: pulse 1s infinite; }
+        .connection-green { background: #10b981; box-shadow: 0 0 8px #10b981; }
+        .connection-blue { background: #3b82f6; box-shadow: 0 0 8px #3b82f6; animation: pulse 0.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+        
         /* Табы */
         .tabs {
             display: flex;
@@ -104,19 +103,36 @@
             font-size: 0.8rem;
             transition: 0.2s;
         }
-        .tab.active {
-            background: linear-gradient(95deg, #f59e0b, #ef4444);
-            color: white;
-        }
-        /* Регистрация */
-        .register-screen {
+        .tab.active { background: linear-gradient(95deg, #f59e0b, #ef4444); color: white; }
+        
+        /* Карточки */
+        .register-screen, .admin-card, .chest-card, .user-card {
             background: #1e293b;
-            border-radius: 40px;
-            padding: 25px;
-            text-align: center;
-            margin-top: 30px;
+            border-radius: 28px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: 0.2s;
         }
-        .register-screen input, .register-screen textarea {
+        .chest-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            border-left: 4px solid #f59e0b;
+        }
+        .chest-icon { font-size: 2rem; }
+        .chest-info { flex: 1; }
+        .chest-name { font-weight: bold; }
+        .chest-price { color: #FFD966; font-size: 0.8rem; }
+        .open-btn {
+            background: #f59e0b;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        input, textarea {
             background: #0f172a;
             border: none;
             border-radius: 30px;
@@ -125,7 +141,7 @@
             width: 100%;
             margin: 8px 0;
         }
-        .register-btn {
+        .register-btn, .admin-btn {
             background: linear-gradient(95deg, #f59e0b, #ef4444);
             border: none;
             padding: 12px;
@@ -134,40 +150,13 @@
             color: white;
             cursor: pointer;
             width: 100%;
-            margin-top: 15px;
+            margin-top: 8px;
         }
-        /* Карточки сундуков */
-        .chest-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-top: 15px;
-        }
-        .chest-card {
-            background: #1e293b;
-            border-radius: 28px;
-            padding: 12px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            cursor: pointer;
-            transition: 0.2s;
-            border-left: 4px solid;
-        }
-        .chest-icon { font-size: 2rem; }
-        .chest-info { flex: 1; }
-        .chest-name { font-weight: bold; font-size: 0.9rem; }
-        .chest-price { color: #FFD966; font-size: 0.75rem; }
-        .open-btn {
-            background: #f59e0b;
-            border: none;
-            padding: 6px 16px;
-            border-radius: 40px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
-        /* Уведомления с таймером */
+        .admin-danger { background: #dc2626; }
+        .admin-success { background: #10b981; }
+        .flex { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        
+        /* Уведомления */
         .notifications-panel {
             position: fixed;
             top: 70px;
@@ -188,91 +177,12 @@
             border-left: 4px solid #f59e0b;
             pointer-events: auto;
             cursor: pointer;
-            transition: 0.2s;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s;
         }
-        .notif-header {
-            font-weight: bold;
-            font-size: 0.9rem;
-            display: flex;
-            justify-content: space-between;
-        }
-        .notif-body { font-size: 0.7rem; opacity: 0.8; margin: 5px 0; }
-        .notif-timer-bar {
-            height: 3px;
-            background: #f59e0b;
-            width: 100%;
-            margin-top: 6px;
-            transition: width 0.05s linear;
-        }
-        .notif-time-left {
-            font-size: 0.6rem;
-            text-align: right;
-            margin-top: 4px;
-            color: #aaa;
-        }
-        /* Админ-панель (скрыта) */
-        .admin-panel {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.98);
-            z-index: 2000;
-            overflow-y: auto;
-            padding: 60px 16px;
-            display: none;
-        }
-        .admin-panel.active {
-            display: block;
-        }
-        .admin-card {
-            background: #1e293b;
-            border-radius: 28px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-        .admin-input {
-            background: #0f172a;
-            border: none;
-            border-radius: 30px;
-            padding: 10px;
-            color: white;
-            width: 100%;
-            margin: 6px 0;
-        }
-        .admin-btn {
-            background: #f59e0b;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 40px;
-            font-weight: bold;
-            cursor: pointer;
-            margin: 4px;
-        }
-        .admin-danger { background: #dc2626; }
-        .admin-success { background: #10b981; }
-        .close-admin {
-            position: fixed;
-            top: 16px;
-            right: 16px;
-            background: #ef4444;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 40px;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            z-index: 2001;
-        }
-        .flex { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-        .user-item {
-            background: #0f172a;
-            border-radius: 20px;
-            padding: 10px;
-            margin: 8px 0;
-        }
+        @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .notif-header { font-weight: bold; display: flex; justify-content: space-between; }
+        .notif-timer-bar { height: 3px; background: #f59e0b; width: 100%; margin-top: 6px; transition: width 0.05s linear; }
+        
         /* Модалки */
         .modal {
             position: fixed;
@@ -290,49 +200,74 @@
             opacity: 0;
             transition: 0.2s;
         }
-        .modal.active {
-            visibility: visible;
-            opacity: 1;
-        }
+        .modal.active { visibility: visible; opacity: 1; }
         .modal-content {
             background: #1e293b;
             border-radius: 48px;
-            padding: 20px;
+            padding: 24px;
             max-width: 350px;
             width: 90%;
             text-align: center;
         }
+        
+        /* Админ-панель */
+        .admin-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.98);
+            z-index: 2000;
+            overflow-y: auto;
+            padding: 60px 16px;
+            display: none;
+        }
+        .admin-panel.active { display: block; }
+        .user-item {
+            background: #0f172a;
+            border-radius: 20px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .user-item:hover { background: #1e293b; }
+        .status-online { color: #10b981; }
+        .status-offline { color: #6b7280; }
+        .status-banned { color: #ef4444; }
+        .search-input { margin-bottom: 16px; }
+        
         .qty-btn {
             background: #2d3748;
             padding: 8px 16px;
             border-radius: 40px;
             cursor: pointer;
-            font-size: 0.8rem;
-        }
-        .server-status {
-            font-size: 0.7rem;
-            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="top-bar" id="topBar" style="display:none;">
-        <div class="logo"><h1>🎲 CHESTVERSE</h1></div>
+        <div class="logo" id="logo"><h1>🎲 CHESTVERSE</h1></div>
         <div class="top-actions">
-            <div class="inv-btn" id="invBtn">📦<span class="inv-badge" id="invBadge"></span></div>
+            <div class="icon-btn" id="notifCenterBtn">🔔<span class="badge" id="notifBadge"></span></div>
+            <div class="icon-btn" id="invBtn">📦<span class="badge" id="invBadge"></span></div>
             <div class="balance-btn" id="balanceBtn"><span class="balance-value" id="balanceValue">0</span>💰</div>
             <div class="profile-btn" id="profileBtn">👤</div>
         </div>
     </div>
+    <div id="connectionStatus" class="connection-status connection-yellow"></div>
 
     <div id="registerScreen" class="register-screen">
         <h2>✨ CHESTVERSE</h2>
-        <div id="serverStatus" class="server-status">🟡 Проверка подключения...</div>
-        <input type="text" id="regName" placeholder="Имя" value="Игрок">
+        <div id="serverStatus" style="font-size:0.8rem; margin-bottom:10px;">🟡 Проверка...</div>
+        <h3>Менеджер аккаунтов</h3>
+        <div id="accountManager"></div>
+        <input type="text" id="regName" placeholder="Новое имя" value="Игрок">
         <input type="text" id="regAvatar" placeholder="Аватар" value="👤">
         <textarea id="regDesc" rows="2" placeholder="О себе"></textarea>
-        <button class="register-btn" id="registerBtn">🚀 НАЧАТЬ ИГРУ</button>
+        <button class="register-btn" id="registerBtn">🚀 СОЗДАТЬ НОВЫЙ АККАУНТ</button>
     </div>
 
     <div id="mainContent" style="display:none;">
@@ -341,47 +276,26 @@
             <div class="tab" data-tab="boost">⚡ Увеличение шансов</div>
             <div class="tab" data-tab="upgrade">⬆️ Улучшение</div>
         </div>
-        <div id="tabOpen" class="tab-content">
-            <div id="chestGrid" class="chest-grid"></div>
-            <div style="margin-top:16px; text-align:center;">
-                <input type="text" id="promoInput" placeholder="Промокод" style="background:#1e293b; border:none; border-radius:40px; padding:10px; width:70%; color:white;">
-                <button id="activatePromoBtn" style="background:#f59e0b; border:none; border-radius:40px; padding:10px 16px;">🎁 Активировать</button>
-            </div>
-        </div>
-        <div id="tabBoost" class="tab-content" style="display:none;">
-            <div class="register-screen" style="margin-top:0;">
-                <h3>⚡ Увеличение шансов</h3>
-                <p>Стоимость открытия увеличена x3, но шансы на редкие предметы выше!</p>
-                <div id="boostChestGrid" class="chest-grid"></div>
-            </div>
-        </div>
+        <div id="tabOpen" class="tab-content"><div id="chestGrid"></div></div>
+        <div id="tabBoost" class="tab-content" style="display:none;"><div id="boostChestGrid"></div></div>
         <div id="tabUpgrade" class="tab-content" style="display:none;">
-            <div class="register-screen" style="margin-top:0;">
-                <h3>⬆️ Улучшение предмета</h3>
-                <p>Выберите предмет из инвентаря для улучшения</p>
-                <div id="upgradeInventoryList"></div>
-                <div id="upgradeArea" style="display:none; margin-top:15px;">
-                    <div id="upgradeResult" style="padding:10px; border-radius:30px; text-align:center;"></div>
-                    <button id="doUpgradeBtn" class="register-btn">✨ Улучшить</button>
-                </div>
-            </div>
+            <div class="register-screen"><h3>⬆️ Улучшение предмета</h3><div id="upgradeInventoryList"></div><div id="upgradeArea" style="display:none;"><div id="upgradeResult" style="padding:10px; border-radius:30px;"></div><button id="doUpgradeBtn" class="register-btn">✨ Улучшить</button></div></div>
         </div>
     </div>
 </div>
 
 <div id="notificationsPanel" class="notifications-panel"></div>
+<div id="notifCenterModal" class="modal"><div class="modal-content"><h3>🔔 Центр уведомлений</h3><div id="notifHistoryList" style="max-height:300px; overflow-y:auto;"></div><button class="register-btn" onclick="closeModal('notifCenterModal')">Закрыть</button></div></div>
+<div id="profileModal" class="modal"><div class="modal-content"><h3>👤 Профиль</h3><p id="profileInfo"></p><button class="register-btn" onclick="closeModal('profileModal')">Закрыть</button></div></div>
+<div id="inventoryModal" class="modal"><div class="modal-content"><h3>📦 Инвентарь</h3><div id="inventoryList"></div><button class="register-btn" onclick="closeModal('inventoryModal')">Закрыть</button></div></div>
+<div id="quantityModal" class="modal"><div class="modal-content"><h3>Количество</h3><div id="qtySelector" class="flex" style="justify-content:center;"></div><div class="flex"><button id="confirmOpenBtn" class="register-btn" style="flex:1">Открыть</button><button onclick="closeModal('quantityModal')" class="register-btn" style="background:#4a5568;">Отмена</button></div></div></div>
+<div id="userActionModal" class="modal"><div class="modal-content"><h3 id="userActionTitle">Действия</h3><div id="userActionContent"></div><button class="register-btn" onclick="closeModal('userActionModal')">Закрыть</button></div></div>
 
-<!-- Скрытая админ-панель (клик 5 раз по логотипу) -->
 <div id="adminPanel" class="admin-panel">
-    <button class="close-admin" id="closeAdminBtn">✕ Закрыть</button>
+    <button class="admin-btn admin-danger" id="closeAdminBtn" style="position:fixed; top:10px; right:10px; width:auto; padding:8px 16px;">✕ Закрыть</button>
     <h2>👑 АДМИН-ПАНЕЛЬ</h2>
     <div id="adminContent"></div>
 </div>
-
-<!-- Модалки -->
-<div id="profileModal" class="modal"><div class="modal-content"><h3>👤 Профиль</h3><p id="profileInfo"></p><button class="register-btn" onclick="closeModal('profileModal')">Закрыть</button></div></div>
-<div id="inventoryModal" class="modal"><div class="modal-content"><h3>📦 Инвентарь</h3><div id="inventoryList"></div><button class="register-btn" onclick="closeModal('inventoryModal')">Закрыть</button></div></div>
-<div id="quantityModal" class="modal"><div class="modal-content"><h3>Количество</h3><div id="qtySelector" class="flex" style="justify-content:center;"></div><div class="flex" style="margin-top:15px;"><button id="confirmOpenBtn" class="register-btn" style="flex:1">Открыть</button><button onclick="closeModal('quantityModal')" class="register-btn" style="background:#4a5568; flex:1">Отмена</button></div></div></div>
 
 <script>
     const SERVER = window.location.origin;
@@ -391,80 +305,92 @@
     let currentQuantity = 1;
     let currentMode = 'open';
     let adminKey = localStorage.getItem('adminKey') || '';
+    let notifHistory = JSON.parse(localStorage.getItem('notifHistory') || '[]');
+    let connectionInterval = null;
+    let isActionLocked = false;
 
-    // ========== УВЕДОМЛЕНИЯ С ТАЙМЕРОМ ==========
-    function showNotification(title, body, durationSec = 10, link = null) {
+    function setConnectionStatus(status) {
+        const el = document.getElementById('connectionStatus');
+        el.className = 'connection-status';
+        if(status === 'red') el.classList.add('connection-red');
+        else if(status === 'yellow') el.classList.add('connection-yellow');
+        else if(status === 'green') el.classList.add('connection-green');
+        else if(status === 'blue') el.classList.add('connection-blue');
+        if(status === 'blue') setTimeout(() => setConnectionStatus('green'), 500);
+    }
+
+    async function apiCall(endpoint, data, showBlue = true) {
+        if(isActionLocked) { showNotification('⚠️ Подождите', 'Предыдущее действие ещё выполняется', 2); return null; }
+        isActionLocked = true;
+        if(showBlue) setConnectionStatus('blue');
+        try {
+            const res = await fetch(`${SERVER}${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            const json = await res.json();
+            setConnectionStatus('green');
+            isActionLocked = false;
+            return json;
+        } catch(e) {
+            setConnectionStatus('red');
+            isActionLocked = false;
+            showNotification('Ошибка', 'Нет связи с сервером', 3);
+            return null;
+        }
+    }
+
+    function showNotification(title, body, durationSec = 5, isGlobal = false) {
         const panel = document.getElementById('notificationsPanel');
         const notif = document.createElement('div');
         notif.className = 'notif';
         const endTime = Date.now() + durationSec * 1000;
-        notif.innerHTML = `
-            <div class="notif-header"><span>${title}</span><span>🔔</span></div>
-            <div class="notif-body">${body}</div>
-            <div class="notif-timer-bar" style="width:100%"></div>
-            <div class="notif-time-left" id="timer-${Date.now()}">${formatTime(durationSec)}</div>
-            ${link ? `<button class="admin-btn" style="margin-top:5px;" onclick="window.open('${link}','_blank')">🔗 Перейти</button>` : ''}
-        `;
+        notif.innerHTML = `<div class="notif-header"><span>${title}</span><span>🔔</span></div><div class="notif-body">${body}</div><div class="notif-timer-bar" style="width:100%"></div>`;
         panel.appendChild(notif);
         const timerBar = notif.querySelector('.notif-timer-bar');
-        const timeSpan = notif.querySelector('.notif-time-left');
         let interval = setInterval(() => {
             const remaining = Math.max(0, endTime - Date.now());
             const percent = (remaining / (durationSec * 1000)) * 100;
             timerBar.style.width = `${percent}%`;
-            timeSpan.innerText = formatTime(Math.floor(remaining / 1000));
-            if (remaining <= 0) {
-                clearInterval(interval);
-                notif.remove();
-            }
-        }, 100);
-        notif.onclick = () => { if(link) window.open(link, '_blank'); notif.remove(); clearInterval(interval); };
+            if(remaining <= 0) { clearInterval(interval); notif.remove(); }
+        }, 50);
+        notif.onclick = () => { notif.remove(); clearInterval(interval); };
         setTimeout(() => { if(notif.parentNode) notif.remove(); clearInterval(interval); }, durationSec * 1000);
-    }
-    function formatTime(sec) {
-        let m = Math.floor(sec / 60);
-        let s = sec % 60;
-        return `${m}мин ${s}сек`;
+        notifHistory.unshift({ title, body, time: new Date().toLocaleTimeString() });
+        if(notifHistory.length > 50) notifHistory.pop();
+        localStorage.setItem('notifHistory', JSON.stringify(notifHistory));
+        const badge = document.getElementById('notifBadge');
+        if(badge) badge.style.display = 'flex';
     }
 
-    // ========== ОСНОВНЫЕ ФУНКЦИИ ==========
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-    async function apiCall(endpoint, data) {
-        try {
-            const res = await fetch(`${SERVER}${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
-            return await res.json();
-        } catch(e) { showNotification('Ошибка', 'Нет связи с сервером', 3); return null; }
-    }
+
     async function register() {
         const res = await apiCall('/api/register', { name: document.getElementById('regName').value, avatar: document.getElementById('regAvatar').value, desc: document.getElementById('regDesc').value });
-        if (res?.success) {
+        if(res?.success) {
             currentUser = res.user;
             localStorage.setItem('chestverse_userId', currentUser.id);
             await loadMainApp();
         } else showNotification('Ошибка', 'Не удалось создать аккаунт', 3);
     }
+
     async function loadChests() {
         const res = await fetch(`${SERVER}/api/chests`);
         const data = await res.json();
         chestsList = data.chests;
-        renderChests();
-    }
-    function renderChests() {
         const grid = document.getElementById('chestGrid');
-        if(grid) grid.innerHTML = chestsList.map(c => `<div class="chest-card" style="border-left-color:#f59e0b" onclick="selectChest(${c.id},'open')"><div class="chest-icon">${c.icon}</div><div class="chest-info"><div class="chest-name">${c.name}</div><div class="chest-price">💰 ${c.price}</div></div><button class="open-btn">Открыть</button></div>`).join('');
+        if(grid) grid.innerHTML = chestsList.map(c => `<div class="chest-card" onclick="selectChest(${c.id},'open')"><div class="chest-icon">${c.icon}</div><div class="chest-info"><div class="chest-name">${c.name}</div><div class="chest-price">💰 ${c.price}</div></div><button class="open-btn">Открыть</button></div>`).join('');
         const boostGrid = document.getElementById('boostChestGrid');
-        if(boostGrid) boostGrid.innerHTML = chestsList.map(c => `<div class="chest-card" style="border-left-color:#10b981" onclick="selectChest(${c.id},'boost')"><div class="chest-icon">${c.icon}</div><div class="chest-info"><div class="chest-name">${c.name} ⚡</div><div class="chest-price">💰 ${c.price * 3}</div></div><button class="open-btn">Открыть</button></div>`).join('');
+        if(boostGrid) boostGrid.innerHTML = chestsList.map(c => `<div class="chest-card" onclick="selectChest(${c.id},'boost')"><div class="chest-icon">${c.icon}</div><div class="chest-info"><div class="chest-name">${c.name} ⚡</div><div class="chest-price">💰 ${c.price * 3}</div></div><button class="open-btn">Открыть</button></div>`).join('');
     }
+
     function selectChest(chestId, mode) {
         currentChest = chestsList.find(c => c.id === chestId);
         currentMode = mode;
-        const maxOpen = currentUser?.extraOpens ? 30 : 10;
         const container = document.getElementById('qtySelector');
-        container.innerHTML = [1,2,3,5,10,15,20,30].filter(q => q <= maxOpen).map(q => `<div class="qty-btn" data-qty="${q}">${q}</div>`).join('');
+        container.innerHTML = [1,2,3,5,10,15,20,30].map(q => `<div class="qty-btn" data-qty="${q}">${q}</div>`).join('');
         container.querySelectorAll('.qty-btn').forEach(btn => btn.onclick = () => { currentQuantity = parseInt(btn.dataset.qty); document.querySelectorAll('.qty-btn').forEach(b=>b.style.background='#2d3748'); btn.style.background='#f59e0b'; });
         document.getElementById('confirmOpenBtn').onclick = () => { openChest(); closeModal('quantityModal'); };
         document.getElementById('quantityModal').classList.add('active');
     }
+
     async function openChest() {
         let price = currentChest.price * (currentMode === 'boost' ? 3 : 1);
         let cost = price * currentQuantity;
@@ -476,64 +402,120 @@
             showNotification('Открытие', `+${res.rewards.reduce((a,b)=>a+b.value,0)} монет`, 4);
         } else showNotification('Ошибка', res?.message || 'Не удалось', 3);
     }
+
     async function loadMainApp() {
         document.getElementById('registerScreen').style.display = 'none';
         document.getElementById('topBar').style.display = 'flex';
         document.getElementById('mainContent').style.display = 'block';
         document.getElementById('balanceValue').innerText = currentUser.balance;
         await loadChests();
-        showNotification('Добро пожаловать!', `${currentUser.name}, используйте промокод NEWBIE25`, 10, null);
+        setConnectionStatus('green');
+        showNotification('Добро пожаловать!', `${currentUser.name}, используйте промокод NEWBIE25`, 8);
     }
-    async function checkSavedUser() {
+
+    function loadAccountManager() {
+        const accounts = JSON.parse(localStorage.getItem('accounts') || '[]');
+        const container = document.getElementById('accountManager');
+        if(accounts.length === 0) { container.innerHTML = '<p>Нет сохранённых аккаунтов</p>'; return; }
+        container.innerHTML = accounts.map(acc => `<div class="user-card" style="padding:10px; margin:5px 0; display:flex; justify-content:space-between; align-items:center;"><div>${acc.avatar} ${acc.name}</div><button class="admin-btn" style="width:auto; padding:5px 15px;" onclick="switchAccount('${acc.id}')">Войти</button></div>`).join('');
+    }
+
+    window.switchAccount = async (id) => {
+        const res = await apiCall('/api/login', { userId: id });
+        if(res?.success && !res.user.isBanned) {
+            currentUser = res.user;
+            localStorage.setItem('chestverse_userId', currentUser.id);
+            let accounts = JSON.parse(localStorage.getItem('accounts') || '[]');
+            if(!accounts.find(a => a.id === id)) accounts.push({ id, name: currentUser.name, avatar: currentUser.avatar });
+            localStorage.setItem('accounts', JSON.stringify(accounts));
+            await loadMainApp();
+        } else showNotification('Ошибка', 'Аккаунт заблокирован или не найден', 3);
+    };
+
+    // АДМИН-ПАНЕЛЬ
+    let adminUsers = [];
+    let adminSearchTerm = '';
+
+    async function loadAdminPanel() {
+        if(!adminKey) { document.getElementById('adminContent').innerHTML = `<div class="admin-card"><h3>🔐 Вход в админку</h3><input type="password" id="adminKeyInput" placeholder="Ключ"><button class="admin-btn" onclick="loginAdmin()">Войти</button></div>`; return; }
+        const res = await apiCall('/api/admin/getUsers', { adminKey });
+        if(res?.users) {
+            adminUsers = res.users;
+            renderAdminPanel();
+        } else { document.getElementById('adminContent').innerHTML = '<div class="admin-card">❌ Ошибка авторизации</div>'; adminKey = ''; localStorage.removeItem('adminKey'); }
+    }
+
+    function renderAdminPanel() {
+        const filtered = adminUsers.filter(u => u.name.toLowerCase().includes(adminSearchTerm.toLowerCase()) || u.id.includes(adminSearchTerm));
+        document.getElementById('adminContent').innerHTML = `
+            <div class="admin-card"><h3>📊 Статистика</h3><p>Игроков: ${adminUsers.length} | Онлайн: ${adminUsers.filter(u=>u.online).length}</p><div id="onlineCount"></div></div>
+            <div class="admin-card"><h3>👥 Управление игроками</h3><input type="text" id="adminSearch" class="admin-input" placeholder="Поиск по имени или ID" oninput="searchUsers()"><div id="adminUsersList"></div></div>
+            <div class="admin-card"><h3>📦 Управление сундуками</h3><input id="newChestName" class="admin-input" placeholder="Название"><input id="newChestPrice" class="admin-input" placeholder="Цена"><input id="newChestIcon" class="admin-input" placeholder="Иконка"><button class="admin-btn" onclick="addChest()">➕ Добавить сундук</button></div>
+            <div class="admin-card"><h3>🎁 Создать промокод</h3><input id="promoCode" placeholder="Код"><input id="promoAmount" placeholder="Сумма"><button class="admin-btn" onclick="createPromo()">Создать</button></div>
+            <div class="admin-card"><h3>🔔 Отправить уведомление</h3><input id="notifTitle" placeholder="Заголовок"><input id="notifBody" placeholder="Текст"><input id="notifSec" placeholder="Секунд" value="30"><button class="admin-btn" onclick="sendGlobalNotification()">Отправить всем</button></div>
+        `;
+        renderAdminUsers();
+    }
+
+    function renderAdminUsers() {
+        const container = document.getElementById('adminUsersList');
+        if(!container) return;
+        const filtered = adminUsers.filter(u => u.name.toLowerCase().includes(adminSearchTerm.toLowerCase()) || u.id.includes(adminSearchTerm));
+        container.innerHTML = filtered.map(u => `
+            <div class="user-item" onclick="showUserActions('${u.id}')">
+                <div class="flex" style="justify-content:space-between;"><span>${u.avatar} ${u.name}</span><span class="${u.isBanned ? 'status-banned' : (u.online ? 'status-online' : 'status-offline')}">${u.isBanned ? '🔴 ЗАБАНЕН' : (u.online ? '🟢 Онлайн' : '⚫ Офлайн')}</span></div>
+                <div style="font-size:0.7rem;">Ср.доход: ${((u.balance / (u.totalOpens||1)) || 0).toFixed(2)}💰 | ID: ${u.id}</div>
+            </div>
+        `).join('');
+    }
+
+    window.searchUsers = () => { adminSearchTerm = document.getElementById('adminSearch')?.value || ''; renderAdminUsers(); };
+    window.showUserActions = (userId) => {
+        const user = adminUsers.find(u => u.id === userId);
+        document.getElementById('userActionTitle').innerText = `Действия: ${user.avatar} ${user.name}`;
+        document.getElementById('userActionContent').innerHTML = `
+            <button class="admin-btn" onclick="kickUser('${userId}')">🔌 Кик с сервера</button>
+            <button class="admin-btn admin-danger" onclick="banUser('${userId}')">🔨 Бан</button>
+            <button class="admin-btn admin-success" onclick="unbanUser('${userId}')">🔓 Разбан</button>
+            <input id="coinAmount" placeholder="Сумма монет" class="admin-input"><button class="admin-btn" onclick="addCoins('${userId}', document.getElementById('coinAmount').value)">💰 Добавить монеты</button>
+            <input id="cardName" placeholder="Название карточки" class="admin-input"><button class="admin-btn" onclick="addCard('${userId}', document.getElementById('cardName').value)">🃏 Добавить карточку</button>
+        `;
+        document.getElementById('userActionModal').classList.add('active');
+    };
+    window.kickUser = async (userId) => { await apiCall('/api/admin/kick', { adminKey, userId }); showNotification('Админ', 'Пользователь кикнут', 3); };
+    window.addCoins = async (userId, amount) => { await apiCall('/api/admin/addCoins', { adminKey, userId, amount: parseInt(amount) }); loadAdminPanel(); };
+    window.addCard = async (userId, cardName) => { await apiCall('/api/admin/addCard', { adminKey, userId, cardName }); showNotification('Админ', 'Карточка добавлена', 3); };
+    window.banUser = async (userId) => { await apiCall('/api/admin/ban', { adminKey, userId }); loadAdminPanel(); };
+    window.unbanUser = async (userId) => { await apiCall('/api/admin/unban', { adminKey, userId }); loadAdminPanel(); };
+    window.addChest = async () => { await apiCall('/api/admin/addChest', { adminKey, name: document.getElementById('newChestName').value, price: parseInt(document.getElementById('newChestPrice').value), icon: document.getElementById('newChestIcon').value }); showNotification('Админ', 'Сундук добавлен', 3); loadChests(); };
+    window.createPromo = async () => { await apiCall('/api/admin/createPromo', { adminKey, code: document.getElementById('promoCode').value, amount: parseInt(document.getElementById('promoAmount').value) }); showNotification('Админ', 'Промокод создан', 3); };
+    window.sendGlobalNotification = () => { showNotification(document.getElementById('notifTitle').value, document.getElementById('notifBody').value, parseInt(document.getElementById('notifSec').value)); };
+    window.loginAdmin = () => { adminKey = document.getElementById('adminKeyInput').value; localStorage.setItem('adminKey', adminKey); loadAdminPanel(); };
+    window.showAdmin = () => { document.getElementById('adminPanel').classList.add('active'); loadAdminPanel(); };
+
+    let clickCount = 0;
+    document.getElementById('logo')?.addEventListener('click', () => { clickCount++; if(clickCount === 5) { showAdmin(); clickCount=0; } setTimeout(()=>clickCount=0,3000); });
+    document.getElementById('closeAdminBtn')?.addEventListener('click', () => document.getElementById('adminPanel').classList.remove('active'));
+    document.getElementById('notifCenterBtn')?.addEventListener('click', () => { document.getElementById('notifHistoryList').innerHTML = notifHistory.map(n => `<div style="padding:8px; border-bottom:1px solid #334155;">[${n.time}] <strong>${n.title}</strong>: ${n.body}</div>`).join('') || 'Нет уведомлений'; document.getElementById('notifCenterModal').classList.add('active'); });
+    document.getElementById('profileBtn').onclick = () => { document.getElementById('profileInfo').innerHTML = `${currentUser.avatar} ${currentUser.name}<br>ID: ${currentUser.id}<br>Баланс: ${currentUser.balance}`; document.getElementById('profileModal').classList.add('active'); };
+    document.getElementById('balanceBtn').onclick = () => { document.getElementById('qtySelector').innerHTML = '<input id="promoCodeInput" placeholder="Промокод"><button class="admin-btn" onclick="activatePromoCodeField()">Активировать</button>'; document.getElementById('confirmOpenBtn').onclick = () => { activatePromoCodeField(); closeModal('quantityModal'); }; document.getElementById('quantityModal').classList.add('active'); };
+    window.activatePromoCodeField = async () => { const code = document.getElementById('promoCodeInput')?.value; if(code) { const res = await apiCall('/api/promo', { userId: currentUser.id, code }); if(res?.success) { currentUser.balance = res.newBalance; document.getElementById('balanceValue').innerText = currentUser.balance; showNotification('Успех', res.message, 3); } else showNotification('Ошибка', res?.message || 'Неверный код', 3); } };
+    document.getElementById('invBtn').onclick = () => { document.getElementById('inventoryList').innerHTML = (currentUser?.inventory || []).map(i => `<div>${i.icon} ${i.name} - ${i.value}💰</div>`).join('') || 'Пусто'; document.getElementById('inventoryModal').classList.add('active'); };
+    document.querySelectorAll('.tab').forEach(t => t.onclick = () => { document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); document.getElementById('tabOpen').style.display = t.dataset.tab === 'open' ? 'block' : 'none'; document.getElementById('tabBoost').style.display = t.dataset.tab === 'boost' ? 'block' : 'none'; document.getElementById('tabUpgrade').style.display = t.dataset.tab === 'upgrade' ? 'block' : 'none'; });
+    document.getElementById('registerBtn').onclick = register;
+
+    async function init() {
         const savedId = localStorage.getItem('chestverse_userId');
         if(savedId) {
             const res = await apiCall('/api/login', { userId: savedId });
             if(res?.success && !res.user.isBanned) { currentUser = res.user; await loadMainApp(); return; }
         }
         document.getElementById('registerScreen').style.display = 'block';
+        loadAccountManager();
+        setConnectionStatus('yellow');
+        setTimeout(() => { if(!currentUser) setConnectionStatus('green'); }, 2000);
     }
-
-    // ========== АДМИН-ПАНЕЛЬ (скрытая) ==========
-    let adminUsers = [];
-    async function loadAdminPanel() {
-        if(!adminKey) { document.getElementById('adminContent').innerHTML = '<div class="admin-card"><h3>🔐 Вход в админку</h3><input type="password" id="adminKeyInput" class="admin-input" placeholder="Ключ"><button class="admin-btn" onclick="loginAdmin()">Войти</button></div>'; return; }
-        const res = await apiCall('/api/admin/getUsers', { adminKey });
-        if(res?.users) {
-            adminUsers = res.users;
-            document.getElementById('adminContent').innerHTML = `
-                <div class="admin-card"><h3>📊 Статистика</h3><p>Игроков: ${adminUsers.length} | Баланс: ${adminUsers.reduce((s,u)=>s+u.balance,0)}💰</p></div>
-                <div class="admin-card"><h3>👥 Управление игроками</h3><div id="adminUsersList"></div></div>
-                <div class="admin-card"><h3>📦 Управление сундуками</h3><button class="admin-btn" onclick="addTestChest()">➕ Добавить тестовый сундук</button></div>
-                <div class="admin-card"><h3>🎁 Создать промокод</h3><input id="promoCode" class="admin-input" placeholder="Код"><input id="promoAmount" class="admin-input" placeholder="Сумма"><button class="admin-btn" onclick="createPromo()">Создать</button></div>
-                <div class="admin-card"><h3>🔔 Отправить уведомление</h3><input id="notifTitle" class="admin-input" placeholder="Заголовок"><input id="notifBody" class="admin-input" placeholder="Текст"><input id="notifSec" class="admin-input" placeholder="Секунд" value="30"><button class="admin-btn" onclick="sendGlobalNotification()">Отправить всем</button></div>
-            `;
-            renderAdminUsers();
-        } else { document.getElementById('adminContent').innerHTML = '<div class="admin-card">❌ Ошибка авторизации</div>'; adminKey = ''; localStorage.removeItem('adminKey'); }
-    }
-    function renderAdminUsers() {
-        const container = document.getElementById('adminUsersList');
-        if(container) container.innerHTML = adminUsers.map(u => `<div class="user-item"><strong>${u.avatar} ${u.name}</strong> (${u.id}) | Баланс: ${u.balance}<br><button class="admin-btn" onclick="addCoins('${u.id}',500)">+500💰</button> <button class="admin-btn admin-danger" onclick="banUser('${u.id}')">🔨 Бан</button> <button class="admin-btn admin-success" onclick="unbanUser('${u.id}')">🔓 Разбан</button></div>`).join('');
-    }
-    window.addCoins = async (userId, amount) => { await apiCall('/api/admin/addCoins', { adminKey, userId, amount }); loadAdminPanel(); };
-    window.banUser = async (userId) => { await apiCall('/api/admin/ban', { adminKey, userId }); loadAdminPanel(); };
-    window.unbanUser = async (userId) => { await apiCall('/api/admin/unban', { adminKey, userId }); loadAdminPanel(); };
-    window.createPromo = async () => { await apiCall('/api/admin/createPromo', { adminKey, code: document.getElementById('promoCode').value, amount: parseInt(document.getElementById('promoAmount').value), uses: 999, onePerUser: true }); showNotification('Админ', 'Промокод создан', 3); };
-    window.addTestChest = async () => { showNotification('Админ', 'Функция в разработке', 3); };
-    window.sendGlobalNotification = () => { showNotification(document.getElementById('notifTitle').value, document.getElementById('notifBody').value, parseInt(document.getElementById('notifSec').value)); };
-    window.loginAdmin = () => { adminKey = document.getElementById('adminKeyInput').value; localStorage.setItem('adminKey', adminKey); loadAdminPanel(); };
-    window.showAdmin = () => { document.getElementById('adminPanel').classList.add('active'); loadAdminPanel(); };
-    document.getElementById('closeAdminBtn').onclick = () => document.getElementById('adminPanel').classList.remove('active');
-    let clickCount = 0;
-    document.querySelector('.logo')?.addEventListener('click', () => { clickCount++; if(clickCount === 5) { showAdmin(); clickCount=0; } setTimeout(()=>clickCount=0,3000); });
-
-    // Инициализация
-    document.getElementById('registerBtn').onclick = register;
-    document.getElementById('activatePromoBtn').onclick = () => { const code = document.getElementById('promoInput').value; if(code) apiCall('/api/promo', { userId: currentUser?.id, code }).then(r=>{ if(r?.success) showNotification('Успех', r.message, 3); }); };
-    document.getElementById('profileBtn').onclick = () => { document.getElementById('profileInfo').innerHTML = `${currentUser.avatar} ${currentUser.name}<br>ID: ${currentUser.id}<br>Баланс: ${currentUser.balance}`; document.getElementById('profileModal').classList.add('active'); };
-    document.getElementById('balanceBtn').onclick = () => showNotification('Баланс', `${currentUser?.balance}💰`, 3);
-    document.getElementById('invBtn').onclick = () => { document.getElementById('inventoryList').innerHTML = (currentUser?.inventory || []).map(i => `<div>${i.icon} ${i.name} - ${i.value}💰</div>`).join('') || 'Пусто'; document.getElementById('inventoryModal').classList.add('active'); };
-    document.querySelectorAll('.tab').forEach(t => t.onclick = () => { document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); document.getElementById('tabOpen').style.display = t.dataset.tab === 'open' ? 'block' : 'none'; document.getElementById('tabBoost').style.display = t.dataset.tab === 'boost' ? 'block' : 'none'; document.getElementById('tabUpgrade').style.display = t.dataset.tab === 'upgrade' ? 'block' : 'none'; });
-    checkSavedUser();
+    init();
 </script>
 </body>
 </html>
