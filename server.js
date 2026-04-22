@@ -3,35 +3,32 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// CORS - разрешаем запросы с любых доменов
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    if (req.method === 'OPTIONS') return res.sendStatus(200);
+    next();
+});
+
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// ========== ОТДАЧА СТРАНИЦ ==========
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
+// Отдаём страницу
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
-app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'admin.html'));
-});
-
-// ========== ХРАНИЛИЩЕ ==========
+// Хранилище
 let users = {};
 let promoCodes = { NEWBIE25: { amount: 25, usesLeft: 999999, onePerUser: true, usedBy: {} } };
 let nextUserId = 1;
-
 function generateUserId() { return (nextUserId++).toString(); }
 
-// ========== API ==========
-
+// API
 app.post('/api/register', (req, res) => {
     const { name, avatar, desc } = req.body;
     const id = generateUserId();
-    users[id] = {
-        id, name: name || 'Игрок', avatar: avatar || '👤', desc: desc || '',
-        balance: 0, inventory: [], createdAt: new Date().toISOString(),
-        isBanned: false, extraOpens: false
-    };
+    users[id] = { id, name: name || 'Игрок', avatar: avatar || '👤', desc: desc || '', balance: 100, inventory: [], createdAt: new Date().toISOString(), isBanned: false, extraOpens: false };
     res.json({ success: true, userId: id, user: users[id] });
 });
 
@@ -44,10 +41,9 @@ app.post('/api/login', (req, res) => {
 
 app.post('/api/promo', (req, res) => {
     const { userId, code } = req.body;
-    if (!users[userId]) return res.status(404).json({ error: 'User not found' });
     const promo = promoCodes[code];
     if (!promo) return res.json({ success: false, message: 'Неверный промокод' });
-    if (promo.onePerUser && promo.usedBy[userId]) return res.json({ success: false, message: 'Вы уже активировали этот промокод' });
+    if (promo.onePerUser && promo.usedBy[userId]) return res.json({ success: false, message: 'Уже активирован' });
     if (promo.usesLeft <= 0) return res.json({ success: false, message: 'Промокод использован' });
     promo.usesLeft--;
     if (promo.onePerUser) promo.usedBy[userId] = true;
@@ -56,17 +52,19 @@ app.post('/api/promo', (req, res) => {
 });
 
 app.post('/api/open', (req, res) => {
-    const { userId, chestId, quantity } = req.body;
+    const { userId, chestId, quantity, mode } = req.body;
     if (!users[userId]) return res.status(404).json({ error: 'User not found' });
     if (users[userId].isBanned) return res.status(403).json({ error: 'Banned' });
     const maxOpen = users[userId].extraOpens ? 30 : 10;
-    if (quantity > maxOpen) return res.json({ success: false, message: `Максимум ${maxOpen} открытий за раз` });
-    const cost = 100 * quantity;
+    if (quantity > maxOpen) return res.json({ success: false, message: `Максимум ${maxOpen} открытий` });
+    let price = 100 * (mode === 'boost' ? 3 : 1);
+    let cost = price * quantity;
     if (users[userId].balance < cost) return res.json({ success: false, message: 'Не хватает монет' });
     users[userId].balance -= cost;
-    const rewards = [];
+    let rewards = [];
     for (let i = 0; i < quantity; i++) {
-        const gain = Math.floor(Math.random() * 150) + 50;
+        let gain = Math.floor(Math.random() * 150) + 50;
+        if (mode === 'boost') gain = Math.floor(gain * 1.5);
         rewards.push({ name: 'Монеты', value: gain, icon: '🪙' });
         users[userId].balance += gain;
     }
@@ -81,54 +79,31 @@ app.get('/api/chests', (req, res) => {
     ] });
 });
 
-// ========== АДМИНКА (с безопасным ключом) ==========
+// АДМИНКА
 const ADMIN_KEY = process.env.ADMIN_KEY || 'CHESTVERSE_ADMIN_2026';
-
 app.post('/api/admin/getUsers', (req, res) => {
-    const { adminKey } = req.body;
-    if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
+    if (req.body.adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
     res.json({ users: Object.values(users) });
 });
-
 app.post('/api/admin/addCoins', (req, res) => {
-    const { adminKey, userId, amount } = req.body;
-    if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
-    if (!users[userId]) return res.json({ error: 'User not found' });
-    users[userId].balance += amount;
-    res.json({ success: true, newBalance: users[userId].balance });
+    if (req.body.adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
+    if (users[req.body.userId]) users[req.body.userId].balance += req.body.amount;
+    res.json({ success: true });
 });
-
 app.post('/api/admin/ban', (req, res) => {
-    const { adminKey, userId } = req.body;
-    if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
-    if (!users[userId]) return res.json({ error: 'User not found' });
-    users[userId].isBanned = true;
+    if (req.body.adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
+    if (users[req.body.userId]) users[req.body.userId].isBanned = true;
     res.json({ success: true });
 });
-
 app.post('/api/admin/unban', (req, res) => {
-    const { adminKey, userId } = req.body;
-    if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
-    if (!users[userId]) return res.json({ error: 'User not found' });
-    users[userId].isBanned = false;
+    if (req.body.adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
+    if (users[req.body.userId]) users[req.body.userId].isBanned = false;
     res.json({ success: true });
 });
-
 app.post('/api/admin/createPromo', (req, res) => {
-    const { adminKey, code, amount, uses, onePerUser } = req.body;
-    if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
-    promoCodes[code] = { amount, usesLeft: uses, onePerUser, usedBy: {} };
+    if (req.body.adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
+    promoCodes[req.body.code] = { amount: req.body.amount, usesLeft: req.body.uses || 999, onePerUser: req.body.onePerUser || true, usedBy: {} };
     res.json({ success: true });
 });
 
-app.post('/api/admin/toggleExtraOpens', (req, res) => {
-    const { adminKey, userId } = req.body;
-    if (adminKey !== ADMIN_KEY) return res.status(403).json({ error: 'Invalid admin key' });
-    if (!users[userId]) return res.json({ error: 'User not found' });
-    users[userId].extraOpens = !users[userId].extraOpens;
-    res.json({ success: true, extraOpens: users[userId].extraOpens });
-});
-
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-});
+app.listen(port, () => console.log(`Server running on port ${port}`));
